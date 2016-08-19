@@ -8,6 +8,40 @@
 
 #import "MBContactPicker.h"
 
+@interface MBTableView : UITableView {
+
+}
+
+@end
+
+@implementation MBTableView
+
+- (BOOL)touchesShouldBegin:(NSSet<UITouch *> *)touches
+                 withEvent:(UIEvent *)event
+             inContentView:(UIView *)view
+{
+    if (view != NULL) {
+        UIView * superview = [view superview];
+        UITableViewCell * cell;
+
+        if ([superview isKindOfClass:[UITableViewCell class]]) {
+            cell = (UITableViewCell *)superview;
+            NSIndexPath * indexPath = [self indexPathForCell:cell];
+
+            [self selectRowAtIndexPath:indexPath animated:false scrollPosition:UITableViewScrollPositionNone];
+            [self.delegate tableView:self didSelectRowAtIndexPath:indexPath];
+        }
+    }
+
+    return true;
+}
+
+@end
+
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+/* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * */
+
 CGFloat const kMaxVisibleRows = 2;
 NSString * const kMBPrompt = @"To:";
 CGFloat const kAnimationSpeed = .25;
@@ -91,7 +125,7 @@ CGFloat const kAnimationSpeed = .25;
     [self addSubview:contactCollectionView];
     self.contactCollectionView = contactCollectionView;
 
-    UITableView *searchTableView = [[UITableView alloc] initWithFrame:CGRectMake(0, self.bounds.size.height, self.bounds.size.width, 0)];
+    UITableView *searchTableView = [[MBTableView alloc] initWithFrame:CGRectMake(0, self.bounds.size.height, self.bounds.size.width, 0)];
     searchTableView.dataSource = self;
     searchTableView.delegate = self;
     searchTableView.translatesAutoresizingMaskIntoConstraints = NO;
@@ -150,7 +184,7 @@ CGFloat const kAnimationSpeed = .25;
     {
         [self.contactCollectionView.selectedContacts addObjectsFromArray:[self.datasource selectedContactModelsForContactPicker:self]];
     }
-    
+
     self.contacts = [self.datasource contactModelsForContactPicker:self];
     
     [self.contactCollectionView reloadData];
@@ -260,9 +294,49 @@ CGFloat const kAnimationSpeed = .25;
 }
 
 #pragma mark - UITableViewDelegate
+- (BOOL)tableView:(UITableView *)tableView canFocusRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"MBContactPicker tableView: canFocusRowAtIndexPath:");
+    return true;
+}
+
+- (nullable NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"MBContactPicker tableView: willSelectRowAtIndexPath:");
+    return indexPath;
+}
+
+- (void)tableView:(UITableView *)tableView commitEditingStyle:(UITableViewCellEditingStyle)editingStyle forRowAtIndexPath:(NSIndexPath *)indexPath {
+    if (editingStyle == UITableViewCellEditingStyleDelete) {
+    }
+
+    NSLog(@"MBContactPicker tableView: willBeginEditingRowAtIndexPath:");
+    return;
+}
+
+- (void)tableView:(UITableView*)tableView willBeginEditingRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"MBContactPicker tableView: willBeginEditingRowAtIndexPath:");
+    return;
+}
+
+- (BOOL)tableView:(UITableView *)tableView shouldHighlightRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"MBContactPicker tableView: shouldHighlightRowAtIndexPath:");
+    return true;
+}
+
+- (void)tableView:(UITableView *)tableView didHighlightRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    NSLog(@"MBContactPicker tableView: didHighlightRowAtIndexPath:");
+    /// selectRowAtIndexPath here!
+    return;
+}
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
+    NSLog(@"MBContactPicker tableView: didSelectRowAtIndexPath:");
+
     id<MBContactPickerModelProtocol> model = self.filteredContacts[indexPath.row];
     
     [self hideSearchTableView];
@@ -315,6 +389,11 @@ CGFloat const kAnimationSpeed = .25;
         }
         self.filteredContacts = [self.contacts filteredArrayUsingPredicate:predicate];
         [self.searchTableView reloadData];
+    }
+
+    if ([self.delegate respondsToSelector:@selector(contactCollectionView:entryTextDidChange:)])
+    {
+        [self.delegate contactCollectionView:contactCollectionView entryTextDidChange:text];
     }
 }
 

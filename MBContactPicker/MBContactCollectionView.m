@@ -11,7 +11,7 @@
 #import "MBContactCollectionViewPromptCell.h"
 #import "MBContactCollectionViewFlowLayout.h"
 
-NSInteger const kCellHeight = 31;
+NSInteger const kCellHeight = 25;
 NSString * const kPrompt = @"To:";
 NSString * const kDefaultEntryText = @" ";
 
@@ -121,7 +121,7 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
     MBContactCollectionViewFlowLayout *layout = (MBContactCollectionViewFlowLayout*)self.collectionViewLayout;
     layout.minimumInteritemSpacing = 5;
     layout.minimumLineSpacing = 1;
-    layout.sectionInset = UIEdgeInsetsMake(0, 10, 0, 10);
+    layout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0);
     
     self.prototypeCell = [[MBContactCollectionViewContactCell alloc] init];
     
@@ -142,7 +142,7 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
 - (CGFloat)maxContentWidth
 {
     UIEdgeInsets sectionInset = ((UICollectionViewFlowLayout*)self.collectionViewLayout).sectionInset;
-    return self.frame.size.width - sectionInset.left - sectionInset.right;
+    return MAX(0, self.frame.size.width - sectionInset.left - sectionInset.right);
 }
 
 - (void)setAllowsTextInput:(BOOL)allowsTextInput
@@ -428,7 +428,7 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
 - (CGSize)collectionView:(UICollectionView *)collectionView layout:(UICollectionViewLayout *)collectionViewLayout sizeForItemAtIndexPath:(NSIndexPath *)indexPath
 {
     CGFloat widthForItem;
-    
+
     if ([self isPromptCell:indexPath])
     {
         widthForItem = [MBContactCollectionViewPromptCell widthWithPrompt:self.prompt];
@@ -444,7 +444,7 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
         id<MBContactPickerModelProtocol> model = self.selectedContacts[[self selectedContactIndexFromIndexPath:indexPath]];
         widthForItem = [self.prototypeCell widthForCellWithContact:model];
     }
-    
+
     return CGSizeMake(MIN([self maxContentWidth], widthForItem), self.cellHeight);
 }
 
@@ -514,8 +514,55 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
     return collectionCell;
 }
 
-#pragma mark - UITextFieldDelegateImproved
+#pragma mark - UITextFieldDelegate
 
+// return NO to disallow editing.
+- (BOOL)textFieldShouldBeginEditing:(UITextField *)textField
+{
+    // delegate
+    if ([self.textFieldDelegate respondsToSelector:@selector(textFieldShouldBeginEditing:)])
+    {
+        return [self.textFieldDelegate textFieldShouldBeginEditing:textField];
+    }
+
+    return YES;
+}
+
+// became first responder
+- (void)textFieldDidBeginEditing:(UITextField *)textField
+{
+    // delegate
+    if ([self.textFieldDelegate respondsToSelector:@selector(textFieldDidBeginEditing:)])
+    {
+        [self.textFieldDelegate textFieldDidBeginEditing:textField];
+    }
+}
+
+// return YES to allow editing to stop and to resign first responder status.
+// NO to disallow the editing session to end
+- (BOOL)textFieldShouldEndEditing:(UITextField *)textField
+{
+    // delegate
+    if ([self.textFieldDelegate respondsToSelector:@selector(textFieldShouldEndEditing:)])
+    {
+        return [self.textFieldDelegate textFieldShouldEndEditing:textField];
+    }
+
+    return YES;
+}
+
+// may be called if forced even if shouldEndEditing returns NO
+// (e.g. view removed from window) or endEditing:YES called
+- (void)textFieldDidEndEditing:(UITextField *)textField
+{
+    // delegate
+    if ([self.textFieldDelegate respondsToSelector:@selector(textFieldDidEndEditing:)])
+    {
+        [self.textFieldDelegate textFieldDidEndEditing:textField];
+    }
+}
+
+// return NO to not change text
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
     NSString *newString = [textField.text stringByReplacingCharactersInRange:range withString:string];
@@ -541,19 +588,29 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
         }
         return NO;
     }
-    
+
+    // delegate
+    if ([self.textFieldDelegate respondsToSelector:@selector(textField:shouldChangeCharactersInRange:replacementString:)])
+    {
+        return [self.textFieldDelegate textField:textField shouldChangeCharactersInRange:range replacementString:string];
+    }
+
     return YES;
 }
 
-- (void)textFieldDidChange:(UITextField *)textField
+// called when clear button pressed. return NO to ignore (no notifications)
+- (BOOL)textFieldShouldClear:(UITextField *)textField
 {
-    self.searchText = textField.text;
-    if ([self.contactDelegate respondsToSelector:@selector(contactCollectionView:entryTextDidChange:)])
+    // delegate
+    if ([self.textFieldDelegate respondsToSelector:@selector(textFieldShouldClear:)])
     {
-        [self.contactDelegate contactCollectionView:self entryTextDidChange:textField.text];
+        return [self.textFieldDelegate textFieldShouldClear:textField];
     }
+
+    return YES;
 }
 
+// called when 'return' key pressed. return NO to ignore.
 - (BOOL)textFieldShouldReturn:(UITextField *)textField
 {
     if ([self.contactDelegate respondsToSelector:@selector(contactCollectionView:didEnterCustomContact:)])
@@ -565,8 +622,28 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
             [self.contactDelegate contactCollectionView:self didEnterCustomContact:trimmedString];
         }
     }
+
+    // delegate
+    if ([self.textFieldDelegate respondsToSelector:@selector(textFieldShouldReturn:)])
+    {
+        return [self.textFieldDelegate textFieldShouldReturn:textField];
+    }
+
     return NO;
 }
+
+#pragma mark - UITextFieldDelegateImproved
+
+- (void)textFieldDidChange:(UITextField *)textField
+{
+    self.searchText = textField.text;
+    if ([self.contactDelegate respondsToSelector:@selector(contactCollectionView:entryTextDidChange:)])
+    {
+        [self.contactDelegate contactCollectionView:self entryTextDidChange:textField.text];
+    }
+}
+
+#pragma mark - Other
 
 - (UITextRange*) selectedTextRange
 {
