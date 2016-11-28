@@ -57,4 +57,6 @@ typedef void(^CompletionBlock)();
 - (void)reloadData;
 - (void)addToSelectedContacts:(id<MBContactPickerModelProtocol>)model;
 - (void)addToSelectedContacts:(id<MBContactPickerModelProtocol>)model withCompletion:(CompletionBlock)completion;
+- (void)addContact:(NSString *)withTitle;
+- (void)removeContact:(NSString *)withTitle;
 @end

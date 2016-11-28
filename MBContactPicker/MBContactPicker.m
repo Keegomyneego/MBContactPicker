@@ -293,6 +293,32 @@ CGFloat const kAnimationSpeed = .25;
     return cell;
 }
 
+- (void) addContact:(NSString *)withTitle {
+    NSUInteger index = [self.contacts indexOfObjectPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
+        id<MBContactPickerModelProtocol> model = (id<MBContactPickerModelProtocol>)obj;
+
+        return [[model contactTitle] isEqualToString: withTitle];
+     }];
+
+    if (index != NSNotFound) {
+        id<MBContactPickerModelProtocol> model = (id<MBContactPickerModelProtocol>)[self.contacts objectAtIndex:index];
+
+        [self.contactCollectionView addToSelectedContacts:model withCompletion:nil];
+    }
+}
+
+- (void) removeContact:(NSString *)withTitle {
+    NSUInteger index = [self.contactsSelected indexOfObjectPassingTest:^(id obj, NSUInteger idx, BOOL *stop) {
+        id<MBContactPickerModelProtocol> model = (id<MBContactPickerModelProtocol>)obj;
+
+        return [[model contactTitle] isEqualToString: withTitle];
+    }];
+
+    if (index != NSNotFound) {
+        [self.contactCollectionView removeFromSelectedContacts:index withCompletion:nil];
+    }
+}
+
 #pragma mark - UITableViewDelegate
 - (BOOL)tableView:(UITableView *)tableView canFocusRowAtIndexPath:(NSIndexPath *)indexPath
 {

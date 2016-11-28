@@ -235,7 +235,9 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
 {
     if ([self indexPathsForSelectedItems].count > 0)
     {
-        [self removeFromSelectedContacts:[self selectedContactIndexFromRow:self.indexPathOfSelectedCell.row] withCompletion:nil];
+        [self removeFromSelectedContacts:[self selectedContactIndexFromRow:self.indexPathOfSelectedCell.row] withCompletion:^() {
+            [self setFocusOnEntry];
+        }];
     }
 }
 
@@ -301,7 +303,6 @@ typedef NS_ENUM(NSInteger, ContactCollectionViewSection) {
             {
                 [self.contactDelegate contactCollectionView:self didRemoveContact:model];
             }
-            [self setFocusOnEntry];
         }];
     }
 }
